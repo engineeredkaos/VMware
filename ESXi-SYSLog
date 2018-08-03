@@ -1,0 +1,14 @@
+For ESX I ssh’ed as root and ran:  (note all of the switches are double dashes – hard to see in this font)
+
+esxcli system syslog config set --loghost=udp://10.10.73.28:514   <- that’s our collector IP, obviously you will want to substitute your own. 
+
+esxcli system syslog reload
+
+you can verify config with esxcli system syslog config get
+
+Open the firewall for syslog with 
+
+esxcli network firewall ruleset set --ruleset-id=syslog --enabled=true
+
+esxcli network firewall refresh
+
