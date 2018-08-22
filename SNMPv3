@@ -1,0 +1,139 @@
+https://rakhesh.com/virtualization/enabling-snmpv3-on-esxi-hosts/
+
+Enabling SNMPv3 on ESXi hosts
+Posted: November 6th, 2016 | Tags: monitoring, powercli, snmp, solarwinds | Category: Virtualization | § 
+A continuation to my earlier post which was to do with SNMPv2.
+
+As before, connect to the vCenter via PowerCLI. And as before the set() method can be used to set SNMP – both v2 and/or v3. The definition of this method is as follows:
+
+
+set(string authentication, string communities, boolean enable, string engineid, string hwsrc, boolean largestorage, string loglevel, string notraps, long port, string privacy, string remoteusers, boolean reset, string syscontact, string syslocation, string targets, string users, string v3targets)
+1
+set(string authentication, string communities, boolean enable, string engineid, string hwsrc, boolean largestorage, string loglevel, string notraps, long port, string privacy, string remoteusers, boolean reset, string syscontact, string syslocation, string targets, string users, string v3targets)
+That’s confusing so best to copy paste the definition into notepad or something so you can be sure you are passing the correct arguments.
+
+First things first. There doesn’t seem to be a way of turning off something. As in, say you already have SNMPv2 turned on, you can’t turn it off by setting the community strings to blank. Doing so generates an error. So if you want to turn previous things off it’s best to do a reset and start with a clean slate.
+
+
+$esxcli.system.snmp.set($null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $true, $null, $null, $null, $null, $null)
+1
+$esxcli.system.snmp.set($null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $true, $null, $null, $null, $null, $null)
+This sets things back to their defaults:
+
+
+> $esxcli.system.snmp.get()
+
+
+authentication :
+communities    :
+enable         : false
+engineid       :
+hwsrc          : indications
+largestorage   : true
+loglevel       : info
+notraps        :
+port           : 161
+privacy        :
+remoteusers    :
+syscontact     :
+syslocation    :
+targets        :
+users          :
+v3targets      :
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+> $esxcli.system.snmp.get()
+ 
+ 
+authentication :
+communities    :
+enable         : false
+engineid       :
+hwsrc          : indications
+largestorage   : true
+loglevel       : info
+notraps        :
+port           : 161
+privacy        :
+remoteusers    :
+syscontact     :
+syslocation    :
+targets        :
+users          :
+v3targets      :
+Before going ahead with any SNMPv3 configuration we need to decide on what authentication and privacy protocols to use. In my case I want to use SHA1 and AES-128. So I need to set that first:
+
+
+$esxcli.system.snmp.set("SHA1", $null, $null, $null, $null, $null, $null, $null, $null, "AES128", $null, $null, $null, $null, $null, $null, $null)
+1
+$esxcli.system.snmp.set("SHA1", $null, $null, $null, $null, $null, $null, $null, $null, "AES128", $null, $null, $null, $null, $null, $null, $null)
+Once I have done this I can generate the hashes. I will need this later to configure SNMPv3.
+
+
+> $esxcli.system.snmp.hash("Password1!","Password1!",$true)
+
+authhash                                                                        privhash
+--------                                                                        --------
+9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab                                        9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab
+1
+2
+3
+4
+5
+> $esxcli.system.snmp.hash("Password1!","Password1!",$true)
+ 
+authhash                                                                        privhash
+--------                                                                        --------
+9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab                                        9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab
+In the example above both my passwords are Password1.
+
+With this in hand I configure SNMPv3:
+
+
+$esxcli.system.snmp.set("SHA1", $null, $true, $null, $null, $null, "info", $null, 161, "AES128", $null, $null, "IT@myfirm.com", "My Firm IT Department", $null, "snmpUser1/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/priv", "xxx.xxx.xxx.xxx/user/priv/trap,xxx.xxx.xxx.xxx/user/priv/trap")
+1
+$esxcli.system.snmp.set("SHA1", $null, $true, $null, $null, $null, "info", $null, 161, "AES128", $null, $null, "IT@myfirm.com", "My Firm IT Department", $null, "snmpUser1/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/priv", "xxx.xxx.xxx.xxx/user/priv/trap,xxx.xxx.xxx.xxx/user/priv/trap")
+That’s it really. In the above example I will be using an SNMPv3 user called snmpUser1.
+
+Now to do it across my estate I can make a loop. No need to create password hashes for each host. The hash stays the same as long as you are using the same password for each host.
+
+
+$Hosts = Get-VMHost | ?{ $_.ConnectionState -eq "Connected" }
+foreach ($VMHost in $Hosts) {
+  Write-Host "Working on $VMHost"
+  $ESXClI = Get-ESXCli -VMHost $VMHost
+  $ESXCLI.system.snmp.set($null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $true, $null, $null, $null, $null, $null)
+  $ESXCLI.system.snmp.set("SHA1", $null, $true, $null, $null, $null, "info", $null, 161, "AES128", $null, $null, "IT@myfirm.com", "My Firm IT Department", $null, "snmpUser1/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/priv", "xxx.xxx.xxx.xxx/user/priv/trap,xxx.xxx.xxx.xxx/user/priv/trap")
+}  
+1
+2
+3
+4
+5
+6
+7
+$Hosts = Get-VMHost | ?{ $_.ConnectionState -eq "Connected" }
+foreach ($VMHost in $Hosts) {
+  Write-Host "Working on $VMHost"
+  $ESXClI = Get-ESXCli -VMHost $VMHost
+  $ESXCLI.system.snmp.set($null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $true, $null, $null, $null, $null, $null)
+  $ESXCLI.system.snmp.set("SHA1", $null, $true, $null, $null, $null, "info", $null, 161, "AES128", $null, $null, "IT@myfirm.com", "My Firm IT Department", $null, "snmpUser1/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/priv", "xxx.xxx.xxx.xxx/user/priv/trap,xxx.xxx.xxx.xxx/user/priv/trap")
+}  
+That’s all!
