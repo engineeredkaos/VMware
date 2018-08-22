@@ -1,0 +1,260 @@
+https://rakhesh.com/virtualization/enabling-snmp-on-esxi-hosts/
+
+SNMPv2
+Enabling SNMP on ESXi hosts
+Posted: May 22nd, 2016 | Tags: monitoring, powercli, snmp, solarwinds | Category: Virtualization | § 
+I wanted to enable SNMP on our ESXi hosts for monitoring via Solarwinds. Here’s what I did. (I am doing this kind of generically, using variables etc, so I can script the thing for multiple hosts).
+
+First I connected to the vCenter Server from PowerCLI.
+
+
+$vcenter = "myvcenter"
+$vcuser = Get-Credential
+Connect-VIServer -Server $vcenter -Credential $vcuser
+1
+2
+3
+$vcenter = "myvcenter"
+$vcuser = Get-Credential
+Connect-VIServer -Server $vcenter -Credential $vcuser
+Next I got its ESXCLI object. This will let me run ESXCLI commands against the host.
+
+
+$vmhost = "myHost"
+$esxcli = Get-EsxCli -VMHost $vmhost
+1
+2
+$vmhost = "myHost"
+$esxcli = Get-EsxCli -VMHost $vmhost
+To view the current status of SNMP you can do can invoke a get() method –
+
+
+> $esxcli.system.snmp.get()
+
+
+authentication :
+communities    :
+enable         : false
+engineid       : 00000063000000a100000000
+hwsrc          : indications
+largestorage   : true
+loglevel       : info
+notraps        :
+port           : 161
+privacy        :
+remoteusers    :
+syscontact     :
+syslocation    :
+targets        :
+users          :
+v3targets      :
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+> $esxcli.system.snmp.get()
+ 
+ 
+authentication :
+communities    :
+enable         : false
+engineid       : 00000063000000a100000000
+hwsrc          : indications
+largestorage   : true
+loglevel       : info
+notraps        :
+port           : 161
+privacy        :
+remoteusers    :
+syscontact     :
+syslocation    :
+targets        :
+users          :
+v3targets      :
+Nothing’s configured currently. To configure something we can use the set() method. From the definition of this method we can see it takes a whole bunch of parameters –
+
+
+> $esxcli.system.snmp
+
+===================
+EsxCliElement: snmp
+
+   Methods:
+   --------
+   AgentConfig get()
+   SNMPv3Hash hash(string authhash, string privhash, boolean rawsecret)
+   boolean set(string authentication, string communities, boolean enable, string engineid, string hwsrc, boolean largestorage, string loglevel, string notraps, long port, string privacy, string remoteusers, boolean reset, string syscontact, string syslocation, string targets, string users, string v3targets)
+   AgentTest test(string authhash, string privhash, boolean rawsecret, string user)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+> $esxcli.system.snmp
+ 
+===================
+EsxCliElement: snmp
+ 
+   Methods:
+   --------
+   AgentConfig get()
+   SNMPv3Hash hash(string authhash, string privhash, boolean rawsecret)
+   boolean set(string authentication, string communities, boolean enable, string engineid, string hwsrc, boolean largestorage, string loglevel, string notraps, long port, string privacy, string remoteusers, boolean reset, string syscontact, string syslocation, string targets, string users, string v3targets)
+   AgentTest test(string authhash, string privhash, boolean rawsecret, string user)
+Here’s what I did to configure SNMP. I want a community string of “public”, enable SNMP, and specify two trap destinations.
+
+
+> $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.x.x.x/public,192.x.x.x/public", $null, $null)
+1
+> $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.x.x.x/public,192.x.x.x/public", $null, $null)
+The result of that will either be a true or false. The get() method can be used again to confirm it is set correctly. And the test() method can be used to test it works –
+
+
+> $esxcli.system.snmp.test()
+
+comments
+--------
+{There are 2 targets configured, send warmStart requested, test completed normally.}
+1
+2
+3
+4
+5
+> $esxcli.system.snmp.test()
+ 
+comments
+--------
+{There are 2 targets configured, send warmStart requested, test completed normally.}
+Now Solarwinds will be able to poll the host via SNMP.
+
+To do this en-masse on all your hosts the following should help –
+
+
+# modify this with your vCenter server name
+$vcenter = "myvcenter"
+
+$vcuser = Get-Credential
+
+Connect-VIServer -Server $vcenter -Credential $vcuser
+
+Get-VMHost | %{ 
+  $vmhost = $_.Name
+  $esxcli = Get-EsxCli -VMHost $vmhost
+  $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.y.y.y/public,192.x.x.x/public", $null, $null)
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+# modify this with your vCenter server name
+$vcenter = "myvcenter"
+ 
+$vcuser = Get-Credential
+ 
+Connect-VIServer -Server $vcenter -Credential $vcuser
+ 
+Get-VMHost | %{ 
+  $vmhost = $_.Name
+  $esxcli = Get-EsxCli -VMHost $vmhost
+  $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.y.y.y/public,192.x.x.x/public", $null, $null)
+}
+Shout out to this VMware blog post which helped a lot and has more info.
+
+The above script failed on some of our ESX hosts with the following error –
+
+
+The method 'set' is invoked with '17' parameters, but the expected parameter count is '16'.
+At line:5 char:3
++   $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $n ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], InvalidArgument
+    + FullyQualifiedErrorId : VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidArgument
+1
+2
+3
+4
+5
+6
+The method 'set' is invoked with '17' parameters, but the expected parameter count is '16'.
+At line:5 char:3
++   $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $n ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], InvalidArgument
+    + FullyQualifiedErrorId : VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidArgument
+Turns out these hosts only accept 16 parameters instead of 17 (the one called largestorage is missing). Not sure why. All our hosts are ESXi 5.5 but am thinking the problem ones are perhaps not using the HP customized version of ESXi.
+
+Anyways, so I modified my script above to take care of this –
+
+
+# modify this with your vCenter server name
+$vcenter = "myvcenter"
+
+$vcuser = Get-Credential
+
+Connect-VIServer -Server $vcenter -Credential $vcuser
+
+Get-VMHost | %{ 
+  $vmhost = $_.Name
+  Write-Host "$vmhost"
+  $esxcli = Get-EsxCli -VMHost $vmhost
+  $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.x.x.x/public,192.y.y.y/public", $null, $null)
+  if ($? -ne $true) { $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null,  $null, "192.x.x.x/public,192.y.y.y/public", $null, $null) }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+# modify this with your vCenter server name
+$vcenter = "myvcenter"
+ 
+$vcuser = Get-Credential
+ 
+Connect-VIServer -Server $vcenter -Credential $vcuser
+ 
+Get-VMHost | %{ 
+  $vmhost = $_.Name
+  Write-Host "$vmhost"
+  $esxcli = Get-EsxCli -VMHost $vmhost
+  $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, $null, "192.x.x.x/public,192.y.y.y/public", $null, $null)
+  if ($? -ne $true) { $esxcli.system.snmp.set($null, "public", $true, $null, $null, $null, $null, $null, $null, $null, $null, $null,  $null, "192.x.x.x/public,192.y.y.y/public", $null, $null) }
+}
+Also, just for my own info – the $null above means the parameter is not set. If that parameter already has a value on the server it is not over-written. To over-write or blank out the existing value replace $null with "".
