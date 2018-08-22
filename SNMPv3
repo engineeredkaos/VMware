@@ -137,3 +137,46 @@ foreach ($VMHost in $Hosts) {
   $ESXCLI.system.snmp.set("SHA1", $null, $true, $null, $null, $null, "info", $null, 161, "AES128", $null, $null, "IT@myfirm.com", "My Firm IT Department", $null, "snmpUser1/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/9e79c8406990d1dxxxxxxx975b364b7e90e9c2ab/priv", "xxx.xxx.xxx.xxx/user/priv/trap,xxx.xxx.xxx.xxx/user/priv/trap")
 }  
 That’s all!
+
+
+
+***************************************************************************************************************************************
+_______________________________________________________________________________________________________________________________________
+
+login as: root
+Using keyboard-interactive authentication.
+Password:
+The time and date of this login have been sent to the system logs.
+
+VMware offers supported, powerful system administration tools.  Please
+see www.vmware.com/go/sysadmintools for details.
+
+The ESXi Shell can be disabled by an administrative user. See the
+vSphere Security documentation for more information.
+[root@ESX03-COOP:~] esxcli system snmp set -x=AES128
+[root@ESX03-COOP:~] esxcli system snmp set -a=SHA1
+[root@ESX03-COOP:~] esxcli system snmp hash -r -A ########## -X ##########
+Enter value for 'auth-hash':
+Enter value for 'priv-hash':
+   Authhash: ***************************
+   Privhash: ***************************
+[root@ESX03-COOP:~] esxcli system snmp set --users SolarWinds/************/************************/priv
+[root@ESX03-COOP:~] esxcli system snmp set -e yes
+[root@ESX03-COOP:~] esxcli system snmp get
+   Authentication: SHA1
+   Communities: 
+   Enable: true
+   Engineid: 00000063000000a100000000
+   Hwsrc: indications
+   Largestorage: true
+   Loglevel: info
+   Notraps:
+   Port: 161
+   Privacy: AES128
+   Remoteusers:
+   Syscontact:
+   Syslocation:
+   Targets:
+   Users: SolarWinds/***/***/priv
+   V3targets:
+[root@ESX03-COOP:~]
