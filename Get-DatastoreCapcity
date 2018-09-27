@@ -1,0 +1,29 @@
+# Date: 09-27-2018
+# Title: Get-DatastoreCapacity 
+# By: Cristian Magana
+# Version: 1.0
+
+# Stores All XXXX VCSAs In An Array
+$vCSA = @( 
+    "VC1.org",
+  	"VC2.org",
+  	"VC3.org"
+);
+
+# Securely Pass Credentials Over The Network.
+$Credentials = Get-Credential
+
+# Establishes Connection To VCSAs.
+clear
+Write-Host "Connecting To All XXXX vCenters.." -ForegroundColor Green
+Connect-VIServer -Server $vCSA -Credential $Credentials
+
+Write-Host "Connected" -Foregroundcolor "Green" 
+
+# Retrieves All Datastore Capacities In All XXXX Virtual Infrastructures.
+"`n"
+Write-Host "Collecting and Datastore Capacities.." -ForegroundColor Green
+#$Results = @()
+#$Result = 
+Get-Datastore | Select @{N="DataStoreName";E={$_.Name}},@{N="Percentage Free Space(%)";E={[math]::Round(($_.FreeSpaceGB)/($_.CapacityGB)*100,2)}} | Where {$_."Percentage(<20%)" -le 20} | Sort "Percentage Free Space(%)"
+# $Result | Export-Csv -NoTypeInformation $LogFile
