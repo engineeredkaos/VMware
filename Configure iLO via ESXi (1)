@@ -1,0 +1,384 @@
+How To Configure HPE iLO via ESXi Shell
+There is a standard way to configure iLO for HPE ProLiant servers, HPE iLO can be configured after boot-up via SETUP utility on all type of servers and generations. If you press [F8] during boot-up, iLO configuration utility will be appeared and then you can configure all iLO configuration such as network connection.
+
+When server has OS or Hypervisor installed, you can’t configure iLO via SETUP utility because server should restart. In order to configuring iLO configurations, all virtual machines should be migrated from ESXi hosts but if you can not restart server or don’t have enough resources for migration, it should be done via ESXi shell.
+
+In case of other operating systems such as Microsoft Windows, configuring iLO is possible via operating system by HPE iLO Configuration Utility.
+
+How To Install HPE iLO Configuration Utility
+In order to configure HPE iLO via ESXi, you need to have iLO driver and iLO Configuration Utility. If you have installed ESXi via HPE customized images, HPE device drivers are installed by default and iLO configuration Utility as well.
+
+But if you have ESXi server that installed by standard image, you have to add the driver and utility manually.
+
+In order to install the driver and utility, you need to download HPE ESXi Offline Bundle for VMware vSphere according to vSphere version from HPE.
+
+The installation instruction is as follows:
+
+Power off any virtual machines that are running on the host and place the host into maintenance mode.
+Transfer the offline bundle onto the ESXi host local path, or extract it onto an online depot.
+Install the bundle on the ESXi host:
+Install remotely from client, with offline bundle contents on a online depot:
+esxcli -s <server> -u root -p mypassword software vib install -d <depotURL/bundle-index.xml>
+Install remotely from client, with offline bundle on ESXi host:
+esxcli -s <server> -u root -p mypassword software vib install -d <ESXi local path><bundle.zip>
+Install from ESXi host, with offline bundle on ESXi host:
+esxcli software vib install -d <ESXi local path><bundle.zip>
+After the bundle is installed, reboot the ESXi host for the updates to take effect.
+(Optional) Verify that the vibs on the bundle are installed on your ESXi host.
+esxcli -s <server> -u root -p mypassword software vib list
+(Optional) Remove individual vibs. <vib name> can be identified by listing the vibs as shown in #5.
+esxcli -s <server> -u root -p mypassword software vib remove -n <vib name>
+Also you can install Offline Bundle via VMware vCenter Update Manager.
+
+After installing the offline bundle or checking the installed driver and utility, server is ready for configuration.
+
+Step 1:
+
+Write the current configuration to a XML file or create XML file manually:
+
+Shell
+~ # cd /opt/hp/tools/
+./hponcfg -w ilo_configuration.xml
+HP Lights-Out Online Configuration utility
+
+Version 4.4-0 (c) Hewlett-Packard Company, 2014
+Firmware Revision = 2.40 Device type = iLO 4 Driver name = hpilo
+iLO IP Address: 0.0.0.0
+Management Processor configuration is successfully written to file "ilo_configuration.xml"
+1
+2
+3
+4
+5
+6
+7
+8
+~ # cd /opt/hp/tools/
+./hponcfg -w ilo_configuration.xml
+HP Lights-Out Online Configuration utility
+ 
+Version 4.4-0 (c) Hewlett-Packard Company, 2014
+Firmware Revision = 2.40 Device type = iLO 4 Driver name = hpilo
+iLO IP Address: 0.0.0.0
+Management Processor configuration is successfully written to file "ilo_configuration.xml"
+The below is a sample of iLO configuration XML:
+
+<!-- HPONCFG VERSION = "4.4-0.0" -->
+<!-- Generated 2/27/2018 17:4:12 -->
+<RIBCL VERSION="2.1">
+ <LOGIN USER_LOGIN="Administrator" PASSWORD="password">
+  <DIR_INFO MODE="write">
+  <MOD_DIR_CONFIG>
+    <DIR_AUTHENTICATION_ENABLED VALUE = "N"/>
+    <DIR_LOCAL_USER_ACCT VALUE = "Y"/>
+    <DIR_SERVER_ADDRESS VALUE = ""/>
+    <DIR_SERVER_PORT VALUE = "636"/>
+    <DIR_OBJECT_DN VALUE = ""/>
+    <DIR_OBJECT_PASSWORD VALUE = ""/>
+    <DIR_USER_CONTEXT_1 VALUE = ""/>
+    <DIR_USER_CONTEXT_2 VALUE = ""/>
+    <DIR_USER_CONTEXT_3 VALUE = ""/>
+  </MOD_DIR_CONFIG>
+  </DIR_INFO>
+  <RIB_INFO MODE="write">
+  <MOD_NETWORK_SETTINGS>
+    <SPEED_AUTOSELECT VALUE = "Y"/>
+    <NIC_SPEED VALUE = "10"/>
+    <FULL_DUPLEX VALUE = "N"/>
+    <IP_ADDRESS VALUE = "0.0.0.0"/>
+    <SUBNET_MASK VALUE = "0.0.0.0"/>
+    <GATEWAY_IP_ADDRESS VALUE = "0.0.0.0"/>
+    <DNS_NAME VALUE = "ILOCZ......."/>
+    <PRIM_DNS_SERVER value = "0.0.0.0"/>
+    <DHCP_ENABLE VALUE = "Y"/>
+    <DOMAIN_NAME VALUE = ""/>
+    <DHCP_GATEWAY VALUE = "Y"/>
+    <DHCP_DNS_SERVER VALUE = "Y"/>
+    <DHCP_STATIC_ROUTE VALUE = "Y"/>
+    <DHCP_WINS_SERVER VALUE = "Y"/>
+    <REG_WINS_SERVER VALUE = "Y"/>
+    <PRIM_WINS_SERVER value = "0.0.0.0"/>
+    <STATIC_ROUTE_1 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_2 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_3 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+  </MOD_NETWORK_SETTINGS>
+  </RIB_INFO>
+  <USER_INFO MODE="write">
+  </USER_INFO>
+ </LOGIN>
+</RIBCL>
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+<!-- HPONCFG VERSION = "4.4-0.0" -->
+<!-- Generated 2/27/2018 17:4:12 -->
+<RIBCL VERSION="2.1">
+ <LOGIN USER_LOGIN="Administrator" PASSWORD="password">
+  <DIR_INFO MODE="write">
+  <MOD_DIR_CONFIG>
+    <DIR_AUTHENTICATION_ENABLED VALUE = "N"/>
+    <DIR_LOCAL_USER_ACCT VALUE = "Y"/>
+    <DIR_SERVER_ADDRESS VALUE = ""/>
+    <DIR_SERVER_PORT VALUE = "636"/>
+    <DIR_OBJECT_DN VALUE = ""/>
+    <DIR_OBJECT_PASSWORD VALUE = ""/>
+    <DIR_USER_CONTEXT_1 VALUE = ""/>
+    <DIR_USER_CONTEXT_2 VALUE = ""/>
+    <DIR_USER_CONTEXT_3 VALUE = ""/>
+  </MOD_DIR_CONFIG>
+  </DIR_INFO>
+  <RIB_INFO MODE="write">
+  <MOD_NETWORK_SETTINGS>
+    <SPEED_AUTOSELECT VALUE = "Y"/>
+    <NIC_SPEED VALUE = "10"/>
+    <FULL_DUPLEX VALUE = "N"/>
+    <IP_ADDRESS VALUE = "0.0.0.0"/>
+    <SUBNET_MASK VALUE = "0.0.0.0"/>
+    <GATEWAY_IP_ADDRESS VALUE = "0.0.0.0"/>
+    <DNS_NAME VALUE = "ILOCZ......."/>
+    <PRIM_DNS_SERVER value = "0.0.0.0"/>
+    <DHCP_ENABLE VALUE = "Y"/>
+    <DOMAIN_NAME VALUE = ""/>
+    <DHCP_GATEWAY VALUE = "Y"/>
+    <DHCP_DNS_SERVER VALUE = "Y"/>
+    <DHCP_STATIC_ROUTE VALUE = "Y"/>
+    <DHCP_WINS_SERVER VALUE = "Y"/>
+    <REG_WINS_SERVER VALUE = "Y"/>
+    <PRIM_WINS_SERVER value = "0.0.0.0"/>
+    <STATIC_ROUTE_1 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_2 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_3 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+  </MOD_NETWORK_SETTINGS>
+  </RIB_INFO>
+  <USER_INFO MODE="write">
+  </USER_INFO>
+ </LOGIN>
+</RIBCL>
+Step 2:
+
+The below items should be change for applying new network configurations:
+
+IP_ADDRESS VALUE = "0.0.0.0"
+SUBNET_MASK VALUE = "0.0.0.0"
+GATEWAY_IP_ADDRESS VALUE = "0.0.0.0"
+DHCP_ENABLE VALUE = "Y"
+1
+2
+3
+4
+IP_ADDRESS VALUE = "0.0.0.0"
+SUBNET_MASK VALUE = "0.0.0.0"
+GATEWAY_IP_ADDRESS VALUE = "0.0.0.0"
+DHCP_ENABLE VALUE = "Y"
+Here is an example of modified XML file:
+
+<!-- HPONCFG VERSION = "4.4-0.0" -->
+<!-- Generated 2/27/2018 17:4:12 -->
+<RIBCL VERSION="2.1">
+ <LOGIN USER_LOGIN="Administrator" PASSWORD="password">
+  <DIR_INFO MODE="write">
+  <MOD_DIR_CONFIG>
+    <DIR_AUTHENTICATION_ENABLED VALUE = "N"/>
+    <DIR_LOCAL_USER_ACCT VALUE = "Y"/>
+    <DIR_SERVER_ADDRESS VALUE = ""/>
+    <DIR_SERVER_PORT VALUE = "636"/>
+    <DIR_OBJECT_DN VALUE = ""/>
+    <DIR_OBJECT_PASSWORD VALUE = ""/>
+    <DIR_USER_CONTEXT_1 VALUE = ""/>
+    <DIR_USER_CONTEXT_2 VALUE = ""/>
+    <DIR_USER_CONTEXT_3 VALUE = ""/>
+  </MOD_DIR_CONFIG>
+  </DIR_INFO>
+  <RIB_INFO MODE="write">
+  <MOD_NETWORK_SETTINGS>
+    <SPEED_AUTOSELECT VALUE = "Y"/>
+    <NIC_SPEED VALUE = "10"/>
+    <FULL_DUPLEX VALUE = "N"/>
+    <IP_ADDRESS VALUE = "192.168.1.1"/>
+    <SUBNET_MASK VALUE = "255.255.255.0"/>
+    <GATEWAY_IP_ADDRESS VALUE = "192.168.1.254"/>
+    <DNS_NAME VALUE = "ILOCZ......."/>
+    <PRIM_DNS_SERVER value = "0.0.0.0"/>
+    <DHCP_ENABLE VALUE = "N"/>
+    <DOMAIN_NAME VALUE = ""/>
+    <DHCP_GATEWAY VALUE = "Y"/>
+    <DHCP_DNS_SERVER VALUE = "Y"/>
+    <DHCP_STATIC_ROUTE VALUE = "Y"/>
+    <DHCP_WINS_SERVER VALUE = "Y"/>
+    <REG_WINS_SERVER VALUE = "Y"/>
+    <PRIM_WINS_SERVER value = "0.0.0.0"/>
+    <STATIC_ROUTE_1 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_2 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_3 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+  </MOD_NETWORK_SETTINGS>
+  </RIB_INFO>
+  <USER_INFO MODE="write">
+  </USER_INFO>
+ </LOGIN>
+</RIBCL>
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+<!-- HPONCFG VERSION = "4.4-0.0" -->
+<!-- Generated 2/27/2018 17:4:12 -->
+<RIBCL VERSION="2.1">
+ <LOGIN USER_LOGIN="Administrator" PASSWORD="password">
+  <DIR_INFO MODE="write">
+  <MOD_DIR_CONFIG>
+    <DIR_AUTHENTICATION_ENABLED VALUE = "N"/>
+    <DIR_LOCAL_USER_ACCT VALUE = "Y"/>
+    <DIR_SERVER_ADDRESS VALUE = ""/>
+    <DIR_SERVER_PORT VALUE = "636"/>
+    <DIR_OBJECT_DN VALUE = ""/>
+    <DIR_OBJECT_PASSWORD VALUE = ""/>
+    <DIR_USER_CONTEXT_1 VALUE = ""/>
+    <DIR_USER_CONTEXT_2 VALUE = ""/>
+    <DIR_USER_CONTEXT_3 VALUE = ""/>
+  </MOD_DIR_CONFIG>
+  </DIR_INFO>
+  <RIB_INFO MODE="write">
+  <MOD_NETWORK_SETTINGS>
+    <SPEED_AUTOSELECT VALUE = "Y"/>
+    <NIC_SPEED VALUE = "10"/>
+    <FULL_DUPLEX VALUE = "N"/>
+    <IP_ADDRESS VALUE = "192.168.1.1"/>
+    <SUBNET_MASK VALUE = "255.255.255.0"/>
+    <GATEWAY_IP_ADDRESS VALUE = "192.168.1.254"/>
+    <DNS_NAME VALUE = "ILOCZ......."/>
+    <PRIM_DNS_SERVER value = "0.0.0.0"/>
+    <DHCP_ENABLE VALUE = "N"/>
+    <DOMAIN_NAME VALUE = ""/>
+    <DHCP_GATEWAY VALUE = "Y"/>
+    <DHCP_DNS_SERVER VALUE = "Y"/>
+    <DHCP_STATIC_ROUTE VALUE = "Y"/>
+    <DHCP_WINS_SERVER VALUE = "Y"/>
+    <REG_WINS_SERVER VALUE = "Y"/>
+    <PRIM_WINS_SERVER value = "0.0.0.0"/>
+    <STATIC_ROUTE_1 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_2 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+    <STATIC_ROUTE_3 DEST = "0.0.0.0" GATEWAY = "0.0.0.0"/>
+  </MOD_NETWORK_SETTINGS>
+  </RIB_INFO>
+  <USER_INFO MODE="write">
+  </USER_INFO>
+ </LOGIN>
+</RIBCL>
+Note: You will not need to edit every time all the parameters, it will be enough to add the lines you want to change. But, you will always have to add the username and password line to authenticate the changes you are doing.
+
+Step 3:
+
+After editing the XML file, you need to force utility to load new configurations by running the below command:
+
+./hponcfg -f ilo_configuration.xml
+HP Lights-Out Online Configuration utility
+
+Version 4.4-0 (c) Hewlett-Packard Company, 2014
+Firmware Revision = 2.40 Device type = iLO 4 Driver name = hpilo
+iLO IP Address: 0.0.0.0
+<INFORM> DHCP is currently disabled, enable DHCP to use any DHCP setting.</INFORM>
+<INFORM>Integrated Lights-Out will reset at the end of the script.</INFORM>
+
+Please wait while the firmware is reset. This might take a minute /
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+./hponcfg -f ilo_configuration.xml
+HP Lights-Out Online Configuration utility
+ 
+Version 4.4-0 (c) Hewlett-Packard Company, 2014
+Firmware Revision = 2.40 Device type = iLO 4 Driver name = hpilo
+iLO IP Address: 0.0.0.0
+<INFORM> DHCP is currently disabled, enable DHCP to use any DHCP setting.</INFORM>
+<INFORM>Integrated Lights-Out will reset at the end of the script.</INFORM>
+ 
+Please wait while the firmware is reset. This might take a minute /
+Applying the new configuration might takes some minutes to restart iLO with new parameters.
