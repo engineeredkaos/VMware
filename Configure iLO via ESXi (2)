@@ -1,5 +1,28 @@
 http://www.vmwarearena.com/how-to-configure-hp-ilo-from-esxi-host/
 
+
+Install HP Bundle Tools on ESXi  
+Check the /opt/hp/tools directory. You will find a binary called hponcfg  
+Create a pwreset.xml file with the following code: 
+~ # vi pwreset.xml
+Press the "I" key to insert the following text
+<RIBCL VERSION="2.0">
+<LOGIN USER_LOGIN="Administrator" PASSWORD="unknown">
+<USER_INFO MODE="write">
+<MOD_USER USER_LOGIN="Administrator">
+<PASSWORD value="password"/>
+</MOD_USER>
+</USER_INFO>
+</LOGIN>
+</RIBCL>
+Press esc key, :wq (to write to file and quit)
+To execute the reset password command type this:
+~ # /opt/hp/tools/hponcfg -f pwreset.xml
+From <https://www.vcloudnine.de/reset-the-hp-ilo-administrator-password-with-hponcfg-on-esxi/> 
+esxcli software vib install -f -v /vmfs/volumes/100ccf4f-af08c6b2/HPBundle/
+From <http://www.vmwarearena.com/how-to-configure-hp-ilo-from-esxi-host/>  
+
+
 How to Configure HP ILO from ESXi host
 POSTED BY MOHAMMED RAFFIC ON LAST UPDATED DEC 4, 2017 AT 8:39PM | PUBLISHED ON NOV 19, 2013 IN TROUBLESHOOTING, VM TRICKS | 104688 VIEWS | 1 RESPONSE
  
