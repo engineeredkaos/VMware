@@ -1,30 +1,5 @@
 How To Configure HPE iLO via ESXi Shell
 
-
-Install HP Bundle Tools on ESXi  
-Check the /opt/hp/tools directory. You will find a binary called hponcfg  
-Create a pwreset.xml file with the following code: 
-~ # vi pwreset.xml
-Press the "I" key to insert the following text
-<RIBCL VERSION="2.0">
-<LOGIN USER_LOGIN="Administrator" PASSWORD="unknown">
-<USER_INFO MODE="write">
-<MOD_USER USER_LOGIN="Administrator">
-<PASSWORD value="password"/>
-</MOD_USER>
-</USER_INFO>
-</LOGIN>
-</RIBCL>
-Press esc key, :wq (to write to file and quit)
-To execute the reset password command type this:
-~ # /opt/hp/tools/hponcfg -f pwreset.xml
-From <https://www.vcloudnine.de/reset-the-hp-ilo-administrator-password-with-hponcfg-on-esxi/> 
-esxcli software vib install -f -v /vmfs/volumes/100ccf4f-af08c6b2/HPBundle/
-From <http://www.vmwarearena.com/how-to-configure-hp-ilo-from-esxi-host/>  
-
-
-
-
 There is a standard way to configure iLO for HPE ProLiant servers, HPE iLO can be configured after boot-up via SETUP utility on all type of servers and generations. If you press [F8] during boot-up, iLO configuration utility will be appeared and then you can configure all iLO configuration such as network connection.
 
 When server has OS or Hypervisor installed, you can’t configure iLO via SETUP utility because server should restart. In order to configuring iLO configurations, all virtual machines should be migrated from ESXi hosts but if you can not restart server or don’t have enough resources for migration, it should be done via ESXi shell.
