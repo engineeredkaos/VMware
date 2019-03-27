@@ -1,0 +1,94 @@
+http://www.vmwarearena.com/how-to-configure-hp-ilo-from-esxi-host/
+
+How to Configure HP ILO from ESXi host
+POSTED BY MOHAMMED RAFFIC ON LAST UPDATED DEC 4, 2017 AT 8:39PM | PUBLISHED ON NOV 19, 2013 IN TROUBLESHOOTING, VM TRICKS | 104688 VIEWS | 1 RESPONSE
+ 
+Configuration of HP ILO can be done using reboot of your HP server and Press <F8> to configure the ILO settings but you need a down time to your ESXi host and all the virtual machines running on it if it is a standalone host and no option to vMotion to other host. It is really a tough task to get downtime for your virtuali machines just for your ILO configurations like Reset ILO configuration, Reconfigure ILO IP address and reset ILO administrative password.
+
+Now ILO configuration of ESXi host can easily be done without need of host restart using HP ESXi utilities.
+HP ESXi Utilities Offline bundle for VMware ESXi 5 will be available as part of HP customized ESXi installer image but if it is not a HP customized ESXi image then you may need to download and install  HP ESXi Utilities Offline bundle for VMware ESXi 5. It downloads the HP ESXi Utilities Offline bundle Zip file.This ZIp file contains 3 different utilities HPONCFG , HPBOOTCFG and HPACUCLI utilities for remote online configuration of servers.
+
+HPONCFG can be used to set up and reconfigure the iLO (Integrated Lights-Out) management controller of a server.
+HPBOOTCFG can be used to set up the boot configuration for the server.
+HPACUCLI can be used in the configuration of HP Smart Array controllers and attached storage
+
+You can directly download  HPONCFG and  Upload the VIB file into your ESXi host and execute the below command to install the HPONCFG utility.
+
+esxcli software vib install -f -v /tmp/hponcfg-04-00.10.vib
+
+Once it is installed. Browse towards the directory /opt/hp/tools and execute  the below commands to perform the below operations. Below are the available help options for HPONCFG utility
+
+HP ILO ESXI
+Reset the ILO from ESXi host
+Browse to /opt/hp/tools and execute the below command to reset the HP ILO configuration.
+
+./hponcfg -r 
+
+
+Export the ILO configuration of your ESXi host into file
+Browse to /opt/hp/tools and execute the below command to export the ILO configuration into text file.
+
+
+ 
+/opt/hp/tools # ./hponcfg -w /tmp/ilo-conf.txt
+
+
+Configuring IP address for HP ILO from ESXi host
+Edit the exported config file /tmp/ilo-conf.txt from above step and change the following IP address variables
+vi ilo-conf.txt 
+    <IP_ADDRESS VALUE = “192.168.0.55”/>
+    <SUBNET_MASK VALUE = “255.255.255.0”/>
+    <GATEWAY_IP_ADDRESS VALUE = “192.168.0.1”/>
+    <DNS_NAME VALUE = “ESXi5-ILO”/>
+    <PRIM_DNS_SERVER value = “192.168.0.20”/>
+    <DHCP_ENABLE VALUE = “N”/>
+Commit the updated IP address configuration from the file (ilo-conf.txt) to the ILO cofig  using th below command
+./hponcfg -f /tmp/ilo-conf.txt
+Thats it .You should be able to reach the ILO of the server using the IP address 192.168.0.55 now.
+Reset the ILO administrator password from ESXi host
+Create a file named reset_admin_pw.xml with the below info and add the new password in the password section:
+
+<ribcl VERSION=”2.0″>
+<login USER_LOGIN=”Administrator” PASSWORD=”YOUR-NEW-PASSWORD“>
+<user_INFO MODE=”write”>
+<mod_USER USER_LOGIN=”Administrator”>
+<password value=”newpass”/>
+</mod_USER>
+</user_INFO>
+</login>
+</ribcl>
+
+Commit the Updated administrator password information from the file (reset_admin_pw.xml) to ILO using the below command
+
+ ./hponcfg -f reset_admin_pw.xml
+
+That’s it you should be able to login to ILO of your ESXi host using the password specified in the above xml file. I hope this is informative for you. Thanks for Reading !!!!
+
+vSphere 6.5 Blog posts:
+What’s New with VMware vSphere 6.5?
+vSphere 6.5 -What’s New with vCenter 6.5?
+What’s New with Virtual SAN 6.5? – New Features Overview
+vSphere 6.5 -What’s New with vSphere 6.5 HA & DRS
+vSphere 6.5 – What’s is in VMware vSphere 6.5 Fault Tolerance?
+Download VMware vSphere 6.5 – Get your Copy to Evaluate!!!
+vSphere 6.5 – Deploying vCenter appliance 6.5
+Deploying vCenter 6.5 External Platform Services Controller
+Deploying vCenter Server appliance 6.5 with External PSC
+vSphere 6.5 – Configuring vCenter Server 6.5 HA
+vSphere 6.5 – vCenter 6.5 Native HA Failover Testing
+vSphere 6.5 Configuration Maximums – What’s New?
+vSphere 6.5 – How VM’s are Secured using vSphere 6.5 Security Features?
+Migrate Windows vCenter Server 6.0 to vCenter Server appliance 6.5
+
+vCenter Server Appliance 6.5 Posts
+The Ultimate Revelation Of Reset VCSA 6.5 Root Password in 60 seconds
+6 Basic Commands to Interact with VCSA 6.5 Embedded VPostgres Database
+6 Tips for Configuring Firewall To Manage VCSA 6.5 Postgres Database Remotely You Can Learn From VMwareArena
+How to Connect VCSA 6.5 Embedded Postgres Database using pgAdmin (With GUI) -VMware Unsupported
+WinSCP Connection to VCSA failed – “Received too large SFTP packet”
+How to Backup vCenter Appliance 6.5 Embedded Postgres Database
+How to Monitor vCenter Server Appliance 6.5 performance using vimtop
+Become an Expert on vCenter Server appliance Log File Location in 120 seconds
+How to Backup And Restore VCSA 6.5 – The Ultimate Cheatsheet
+How to Join VCSA 6.5 to Active Directory Domain from Web Client
+How to Configure Active Directory Authentication for vCenter Server 6.5
